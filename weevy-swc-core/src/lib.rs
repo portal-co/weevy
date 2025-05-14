@@ -19,6 +19,7 @@ use swc_ecma_ast::Id;
 use swc_ecma_ast::IdentName;
 use swc_ecma_ast::Lit;
 use swc_ecma_ast::MemberExpr;
+use swc_ecma_ast::MemberProp;
 use swc_ecma_ast::MethodProp;
 use swc_ecma_ast::ModuleDecl;
 use swc_ecma_ast::ModuleItem;
@@ -232,14 +233,66 @@ impl VisitMut for Wimple {
             if let Expr::Call(c) = e {
                 if let Callee::Expr(e) = &mut c.callee {
                     if let Expr::Member(m) = &mut **e {
-                        m.visit_mut_children_with(self);
-                        c.args.visit_mut_children_with(self);
-                        break 'a;
+                        if let MemberProp::Computed(_) | MemberProp::Ident(_) = &m.prop {
+                            c.args.visit_mut_children_with(self);
+                            m.visit_mut_children_with(self);
+                            // let e = &mut **e;
+                            let w = wevy(m.span(), self.root);
+                            let w = [
+                                Atom::new("guests"),
+                                self.guest_id.clone(),
+                                Atom::new("ofThis"),
+                            ]
+                            .into_iter()
+                            .fold(w, |e, a| {
+                                let s = e.span();
+                                Expr::Member(MemberExpr {
+                                    span: e.span(),
+                                    obj: Box::new(e),
+                                    prop: swc_ecma_ast::MemberProp::Ident(IdentName {
+                                        span: s,
+                                        sym: a,
+                                    }),
+                                })
+                            });
+                            let m = take(m);
+                            // let e2 = take(&mut **e);
+                            **e = Expr::Call(CallExpr {
+                                span: m.span(),
+                                ctxt: self.root,
+                                callee: Callee::Expr(Box::new(w)),
+                                args: vec![
+                                    ExprOrSpread {
+                                        spread: None,
+                                        expr: m.obj,
+                                    },
+                                    ExprOrSpread {
+                                        spread: None,
+                                        expr: match m.prop {
+                                            MemberProp::Ident(ident_name) => {
+                                                Box::new(Expr::Lit(Lit::Str(Str {
+                                                    span: ident_name.span,
+                                                    value: ident_name.sym,
+                                                    raw: None,
+                                                })))
+                                            }
+                                            MemberProp::PrivateName(private_name) => todo!(),
+                                            MemberProp::Computed(computed_prop_name) => {
+                                                computed_prop_name.expr
+                                            }
+                                        },
+                                    },
+                                ],
+                                type_args: None,
+                            });
+                            break 'a;
+                        }
                     }
                 }
             }
             e.visit_mut_children_with(self);
-        };
+        }
+        // };
         if let Expr::Lit(_) | Expr::Cond(_) | Expr::Unary(_) | Expr::Bin(_) = e {
             return;
         }

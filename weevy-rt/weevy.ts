@@ -27,7 +27,7 @@ export class Guest {
     #expose_: WeakMap<any, any> = new WeakMap();
     #rewriter: (a: string) => string;
     of<T>(t: T): T {
-        if(typeof t !== "object" && typeof t !== "function"){
+        if (typeof t !== "object" && typeof t !== "function") {
             return t;
         }
         var a = this.#of_.get(t);
@@ -36,13 +36,29 @@ export class Guest {
         }
         return this.of(a);
     }
-    #set<T extends object>(a: T, p: ProxyHandler<T>) {
-        let v: T;
-        this.#of_.set(a, v = new Proxy(a, p));
+    ofThis<T extends object>(this_: T, key: keyof T): T[typeof key] {
+        let t = this.of(this_[key]);
+        if (typeof t !== "object" && typeof t !== "function") {
+            return t;
+        }
+        return new Proxy(t as any, {
+            apply(target, thisArg, argArray) {
+                thisArg = this_;
+                return Reflect.apply(target, thisArg, argArray);
+            },
+        }) as T[typeof key];
+    }
+    #set<T extends object>(a: T, p: ProxyHandler<T>, create: boolean): T {
+        let v: T = new Proxy(create ? Object.create(a) : a, p);
+        // if (create) {
+        //     v = Object.create(v);
+        // }
+        this.#of_.set(a, v);
         this.#expose_.set(v, a);
+        return v;
     }
     #expose<T>(t: T): T {
-        if(typeof t !== "object" && typeof t !== "function"){
+        if (typeof t !== "object" && typeof t !== "function") {
             return t;
         }
         var a = this.#expose_.get(t);
@@ -99,8 +115,11 @@ export class Guest {
                     }
                     return p;
                 });
-            }
-        });
+            },
+            getPrototypeOf(target) {
+                return Reflect.getPrototypeOf(Reflect.getPrototypeOf(target)!);
+            },
+        }, true);
     }
 }
 interface GuestMap {
