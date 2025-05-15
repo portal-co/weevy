@@ -49,7 +49,12 @@ export class Guest {
         }) as T[typeof key];
     }
     #set<T extends object>(a: T, p: ProxyHandler<T>, create: boolean): T {
-        let v: T = new Proxy(create ? Object.create(a) : a, p);
+        let crate = (a) => new Proxy(Object.create(a), {
+            getPrototypeOf(target) {
+                return Reflect.getPrototypeOf(Reflect.getPrototypeOf(target)!);
+            },
+        });
+        let v: T = new Proxy(create ? crate(a) : a, p);
         // if (create) {
         //     v = Object.create(v);
         // }
@@ -116,9 +121,7 @@ export class Guest {
                     return p;
                 });
             },
-            getPrototypeOf(target) {
-                return Reflect.getPrototypeOf(Reflect.getPrototypeOf(target)!);
-            },
+
         }, true);
     }
 }
