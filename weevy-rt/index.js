@@ -143,7 +143,7 @@ export const WeevyMain = {
         return (r, v) => {
             const s = r.split(";");
             const [c, b] = [parseInt(s[0]), parseInt(s[1])];
-            const x = new Uint8Array(a, c, b - c);
+            const x = new Uint8Array(a.buffer, c + a.byteOffset, b - c);
             // let res;
             // return v => {
             Host.of(v).stringify = () => (ress[r] || (ress[r] = { $: new TextDecoder().decode(x) })).$;
