@@ -1,5 +1,5 @@
 {
-  "name": "weevy-crx-rt",
+  "name": "@portal-solutions/weevy-crx-rt",
   "version": "0.0.0",
   "description": "",
   "main": "index.js",
