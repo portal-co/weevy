@@ -2,6 +2,8 @@
 name = "weevy-server"
 version = "0.1.0"
 edition = "2024"
+license = "MPL-2.0"
+description = "A powerful rewriter"
 
 [dependencies]
 anyhow = "1.0.98"
