@@ -3,5 +3,8 @@
     "workspaces": [
         "weevy-rt",
         "weevy-crx-rt"
-    ]
+    ],
+    "devDependencies": {
+        "typescript": "^5.8.3"
+    }
 }

@@ -1,5 +1,5 @@
-export function init(url: string) {
-    chrome.webRequest.onBeforeRequest.addListener(
+export function initChrome(url: string) {
+    (globalThis as any).chrome.webRequest.onBeforeRequest.addListener(
         function (details) {
             if (details.type !== 'script') {
                 return;
