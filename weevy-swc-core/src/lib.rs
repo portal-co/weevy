@@ -232,10 +232,48 @@ impl VisitMut for Wimple {
         'a: {
             if let Expr::Call(c) = e {
                 if let Callee::Expr(e) = &mut c.callee {
+                    if let Expr::Ident(i) = &**e {
+                        if i.sym.as_str() == "eval" {
+                            c.args.visit_mut_children_with(self);
+                            if let Some(e) = c.args.get_mut(0) {
+                                let e = &mut *e.expr;
+                                let w = wevy(e.span(), self.root);
+                                let w =
+                                    [Atom::new("guests"), self.guest_id.clone(), Atom::new("rewrite")]
+                                        .into_iter()
+                                        .fold(w, |e, a| {
+                                            let s = e.span();
+                                            Expr::Member(MemberExpr {
+                                                span: e.span(),
+                                                obj: Box::new(e),
+                                                prop: swc_ecma_ast::MemberProp::Ident(IdentName {
+                                                    span: s,
+                                                    sym: a,
+                                                }),
+                                            })
+                                        });
+                                let e2 = take(e);
+                                *e = Expr::Call(CallExpr {
+                                    span: e2.span(),
+                                    ctxt: self.root,
+                                    callee: Callee::Expr(Box::new(w)),
+                                    args: vec![ExprOrSpread {
+                                        spread: None,
+                                        expr: Box::new(e2),
+                                    }],
+                                    type_args: None,
+                                });
+                            }
+                            break 'a;
+                        }
+                    }
                     if let Expr::Member(m) = &mut **e {
                         if let MemberProp::Computed(_) | MemberProp::Ident(_) = &m.prop {
                             c.args.visit_mut_children_with(self);
                             m.visit_mut_children_with(self);
+                            if *m.obj.as_ref() == wevy(m.obj.span(), self.root) {
+                                return;
+                            }
                             // let e = &mut **e;
                             let w = wevy(m.span(), self.root);
                             let w = [

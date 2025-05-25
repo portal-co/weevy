@@ -1,0 +1,7 @@
+{
+    "name": "weevy",
+    "workspaces": [
+        "weevy-rt",
+        "weevy-crx-rt"
+    ]
+}

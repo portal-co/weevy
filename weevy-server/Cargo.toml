@@ -1,0 +1,18 @@
+[package]
+name = "weevy-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.98"
+axum = "0.8.4"
+base64 = "0.22.1"
+reqwest = "0.12.15"
+swc_atoms.workspace = true
+swc_common = { workspace = true, features = ["tty-emitter"] }
+swc_ecma_ast.workspace = true
+swc_ecma_parser.workspace = true
+swc_ecma_visit.workspace = true
+swc_ecma_codegen.workspace = true
+tokio = "1.45.0"
+weevy-swc-core = { version = "0.1.0", path = "../weevy-swc-core" }

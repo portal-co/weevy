@@ -1,6 +1,14 @@
 import brotliPromise from 'brotli-wasm'
 const brotli = await brotliPromise;
 import { decode } from '@mikeshardmind/base2048'
+export function urlRewriter(base: string): (a: string) => string {
+    return data => {
+        let a = new XMLHttpRequest();
+        a.open('GET', `${base}code=${btoa(data)}`, false);
+        a.send();
+        return a.responseText;
+    }
+}
 const globalName = '__WeevyMain';
 // const symMarkPrivate = Symbol.for("weevy private");
 // const symSpecialStringify = Symbol.for("weevy string marker");
@@ -26,6 +34,9 @@ export class Guest {
     #of_: WeakMap<any, any> = new WeakMap();
     #expose_: WeakMap<any, any> = new WeakMap();
     #rewriter: (a: string) => string;
+    rewrite(a: string): string {
+        return this.#rewriter(a)
+    }
     of<T>(t: T): T {
         if (typeof t !== "object" && typeof t !== "function") {
             return t;
