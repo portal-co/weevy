@@ -1,11 +1,6 @@
+import { Host as _Host } from '../weevy-src-packager';
 export declare function urlRewriter(base: string): (a: string) => string;
-export declare class Host {
-    #private;
-    static mappers: WeakMap<any, Host>;
-    stringify: () => string | undefined;
-    constructor(obj: any);
-    static of(a: any): Host;
-}
+export declare let Host: typeof _Host;
 export declare class Guest {
     #private;
     rewrite(a: string): string;
@@ -21,5 +16,9 @@ export declare const WeevyMain: {
     newSourceDecompressor(x: any): (r: any, v: any) => any;
     guests: GuestMap;
     withProxy<T extends object>(a: T): T;
+    contextStack: string[];
+    readonly context: string | undefined;
+    wrap<T>(t: T): T;
+    readonly contextGuest: Guest | undefined;
 };
 export {};

@@ -1,6 +1,11 @@
+import { hook } from '@portal-solutions/hooker-core';
+let _Proxy = globalThis.Proxy;
+let _Reflect = globalThis.Reflect;
+let push = Array.prototype.push.call.bind(Array.prototype.push);
+let pop = Array.prototype.pop.call.bind(Array.prototype.pop);
 import brotliPromise from 'brotli-wasm';
 const brotli = await brotliPromise;
-import { decode } from '@mikeshardmind/base2048';
+import { Host as _Host, newSourceDecompressor } from '../weevy-src-packager';
 export function urlRewriter(base) {
     return data => {
         let a = new XMLHttpRequest();
@@ -13,22 +18,7 @@ const globalName = '__WeevyMain';
 // const symMarkPrivate = Symbol.for("weevy private");
 // const symSpecialStringify = Symbol.for("weevy string marker");
 // const marSpecialStringify: WeakMap<any, () => string> = new WeakMap();
-export class Host {
-    static mappers = new WeakMap();
-    #obj;
-    stringify;
-    constructor(obj) {
-        this.#obj = obj;
-    }
-    static of(a) {
-        while (true) {
-            if (this.mappers.has(a)) {
-                return this.mappers.get(a);
-            }
-            this.mappers.set(a, new Host(a));
-        }
-    }
-}
+export let Host = _Host;
 export class Guest {
     // #globalThis: typeof globalThis;
     #of_ = new WeakMap();
@@ -138,17 +128,9 @@ export class Guest {
 export const WeevyMain = {
     // [symMarkPrivate]: { replaceWith: undefined },
     newSourceDecompressor(x) {
-        const a = brotli.decompress(decode(x));
-        let ress = {};
+        let a = newSourceDecompressor(x);
         return (r, v) => {
-            const s = r.split(";");
-            const [c, b] = [parseInt(s[0]), parseInt(s[1])];
-            const x = new Uint8Array(a.buffer, c + a.byteOffset, b - c);
-            // let res;
-            // return v => {
-            Host.of(v).stringify = () => (ress[r] || (ress[r] = { $: new TextDecoder().decode(x) })).$;
-            return v;
-            // }
+            return a(r, this.wrap(v));
         };
     },
     guests: {},
@@ -158,6 +140,48 @@ export const WeevyMain = {
                 return a !== globalName && Reflect.has(target, a);
             }
         });
+    },
+    contextStack: [],
+    get context() {
+        if (this.contextStack.length === 0) {
+            return undefined;
+        }
+        return this.contextStack[this.contextStack.length - 1];
+    },
+    wrap(t) {
+        if (typeof t !== "function" || typeof t !== "object")
+            return t;
+        let cx = this.context;
+        if (cx === undefined)
+            return t;
+        let self = this;
+        return new _Proxy(t, {
+            apply(target, thisArg, argArray) {
+                push(self.contextStack, cx);
+                try {
+                    return _Reflect.apply(target, thisArg, argArray);
+                }
+                finally {
+                    pop(self.contextStack);
+                }
+            },
+            construct(target, argArray, newTarget) {
+                push(self.contextStack, cx);
+                try {
+                    return _Reflect.construct(target, argArray, newTarget);
+                }
+                finally {
+                    pop(self.contextStack);
+                }
+            },
+        });
+    },
+    get contextGuest() {
+        var c = this.context;
+        if (c === undefined) {
+            return undefined;
+        }
+        return this.guests[c];
     }
 };
 Object.defineProperty(globalThis, globalName, {
@@ -166,21 +190,48 @@ Object.defineProperty(globalThis, globalName, {
     enumerable: false,
     writable: false
 });
-Function.prototype.toString = new Proxy(Function.prototype.toString, {
-    apply: (a, b, c) => {
-        var g = Host.of(b).stringify;
-        if (g !== undefined) {
-            return g();
-        }
-        return Reflect.apply(a, b, c);
-    }
-});
-globalThis.Proxy = new Proxy(globalThis.Proxy, {
+// Function.prototype.toString = new Proxy(Function.prototype.toString, {
+//     apply: (a, b, c) => {
+//         var g = Host.of(b).stringify;
+//         if (g !== undefined) {
+//             return g();
+//         }
+//         return Reflect.apply(a, b, c);
+//     }
+// });
+// hook(Function.prototype, "toString", Reflect => ({
+//     apply(a, b, c) {
+//         var g = Host.of(b).stringify;
+//         if (g !== undefined) {
+//             return g();
+//         }
+//         return Reflect.apply(a, b, c);
+//     }
+// }));
+// hook(globalThis, "Proxy", Reflect => ({
+//     construct(target, argArray, newTarget) {
+//         var v = Reflect.construct(target, argArray, newTarget);
+//         if (argArray.length > 0) {
+//             Host.of(v).stringify = Host.of(argArray[0]).stringify;
+//         }
+//         return v;
+//     },
+// }));
+hook(globalThis, "Promise", Reflect => ({
     construct(target, argArray, newTarget) {
-        var v = Reflect.construct(target, argArray, newTarget);
-        if (argArray.length > 0) {
-            Host.of(v).stringify = Host.of(argArray[0]).stringify;
+        let old = argArray[0];
+        let x = WeevyMain.context;
+        if (x === undefined) {
+            return Reflect.construct(target, [old], newTarget);
         }
-        return v;
+        return Reflect.construct(target, [(resolve, reject) => {
+                push(WeevyMain.contextStack, x);
+                try {
+                    return old(resolve, reject);
+                }
+                finally {
+                    pop(WeevyMain.contextStack);
+                }
+            }], newTarget);
     },
-});
+}));

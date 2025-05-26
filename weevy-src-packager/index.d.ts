@@ -1,7 +1,7 @@
 export declare class Host {
     #private;
     static mappers: WeakMap<any, Host>;
-    stringify: () => string | undefined;
+    stringify: (() => string) | undefined;
     constructor(obj: any);
     static of(a: any): Host;
 }
