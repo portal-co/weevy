@@ -1,6 +1,5 @@
 import { hook } from '@portal-solutions/hooker-core';
-import brotliPromise from 'brotli-wasm';
-const brotli = await brotliPromise;
+import { decompress } from 'brotli-compress/js.mjs';
 import { decode } from '@mikeshardmind/base2048';
 export class Host {
     static mappers = new WeakMap();
@@ -19,7 +18,7 @@ export class Host {
     }
 }
 export function newSourceDecompressor(x) {
-    const a = brotli.decompress(decode(x));
+    const a = decompress(decode(x));
     let ress = {};
     return (r, v) => {
         // v = this.wrap(v);
