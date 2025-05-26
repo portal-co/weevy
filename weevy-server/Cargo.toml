@@ -1,6 +1,6 @@
 [package]
 name = "weevy-server"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 license = "MPL-2.0"
 description = "A powerful rewriter"
@@ -17,4 +17,4 @@ swc_ecma_parser.workspace = true
 swc_ecma_visit.workspace = true
 swc_ecma_codegen.workspace = true
 tokio = "1.45.0"
-weevy-swc-core = { version = "0.1.0", path = "../weevy-swc-core" }
+weevy-swc-core = { version = "0.2.0", path = "../weevy-swc-core" }
