@@ -5,7 +5,7 @@ import { decode } from '@mikeshardmind/base2048'
 export class Host {
     static mappers: WeakMap<any, Host> = new WeakMap();
     #obj: any;
-    stringify: () => string | undefined;
+    stringify: (() => string) | undefined;
     constructor(obj: any) {
         this.#obj = obj;
     }
