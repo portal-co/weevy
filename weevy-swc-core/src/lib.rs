@@ -36,10 +36,36 @@ use swc_ecma_ast::VarDeclarator;
 use swc_ecma_ast::{Ident, ImportDecl, Module};
 use swc_ecma_visit::VisitMut;
 use swc_ecma_visit::VisitMutWith;
+
 pub fn wevy(span: Span, ctx: SyntaxContext) -> Expr {
     Expr::Ident(Ident::new(Atom::new("__WeevyMain"), span, ctx))
 }
+pub fn default_source_mapper(m: &(dyn Spanned + '_), root: SyntaxContext) -> Expr {
+    Expr::Member(MemberExpr {
+        span: m.span(),
+        obj: Box::new(wevy(m.span(), root)),
+        prop: swc_ecma_ast::MemberProp::Ident(IdentName {
+            span: m.span(),
+            sym: Atom::new("newSrcDecompressor"),
+        }),
+    })
+}
+pub fn distanced_source_mapper(m: &(dyn Spanned + '_), name: Atom, root: SyntaxContext) -> Expr {
+    Expr::Member(MemberExpr {
+        span: m.span(),
+        obj: Box::new(Expr::Ident(Ident::new(
+            Atom::new("globalThis"),
+            m.span(),
+            root,
+        ))),
+        prop: swc_ecma_ast::MemberProp::Ident(IdentName {
+            span: m.span(),
+            sym: name,
+        }),
+    })
+}
 pub struct SourceMapper {
+    pub source_mapper: Expr,
     pub sm: Lrc<swc_common::SourceMap>,
     pub data: Vec<u8>,
     pub id: Ident,
@@ -64,14 +90,7 @@ impl VisitMut for SourceMapper {
                 init: Some(Box::new(Expr::Call(CallExpr {
                     span: m.span(),
                     ctxt: Default::default(),
-                    callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Member(MemberExpr {
-                        span: m.span(),
-                        obj: Box::new(wevy(m.span(), self.root)),
-                        prop: swc_ecma_ast::MemberProp::Ident(IdentName {
-                            span: m.span(),
-                            sym: Atom::new("newSrcDecompressor"),
-                        }),
-                    }))),
+                    callee: swc_ecma_ast::Callee::Expr(Box::new(self.source_mapper.clone())),
                     args: vec![ExprOrSpread {
                         spread: None,
                         expr: Box::new(Expr::Lit(Lit::Str(Str {
@@ -107,14 +126,7 @@ impl VisitMut for SourceMapper {
                 init: Some(Box::new(Expr::Call(CallExpr {
                     span: m.span(),
                     ctxt: Default::default(),
-                    callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Member(MemberExpr {
-                        span: m.span(),
-                        obj: Box::new(wevy(m.span(), self.root)),
-                        prop: swc_ecma_ast::MemberProp::Ident(IdentName {
-                            span: m.span(),
-                            sym: Atom::new("newSrcDecompressor"),
-                        }),
-                    }))),
+                    callee: swc_ecma_ast::Callee::Expr(Box::new(self.source_mapper.clone())),
                     args: vec![ExprOrSpread {
                         spread: None,
                         expr: Box::new(Expr::Lit(Lit::Str(Str {
@@ -238,20 +250,23 @@ impl VisitMut for Wimple {
                             if let Some(e) = c.args.get_mut(0) {
                                 let e = &mut *e.expr;
                                 let w = wevy(e.span(), self.root);
-                                let w =
-                                    [Atom::new("guests"), self.guest_id.clone(), Atom::new("rewrite")]
-                                        .into_iter()
-                                        .fold(w, |e, a| {
-                                            let s = e.span();
-                                            Expr::Member(MemberExpr {
-                                                span: e.span(),
-                                                obj: Box::new(e),
-                                                prop: swc_ecma_ast::MemberProp::Ident(IdentName {
-                                                    span: s,
-                                                    sym: a,
-                                                }),
-                                            })
-                                        });
+                                let w = [
+                                    Atom::new("guests"),
+                                    self.guest_id.clone(),
+                                    Atom::new("rewrite"),
+                                ]
+                                .into_iter()
+                                .fold(w, |e, a| {
+                                    let s = e.span();
+                                    Expr::Member(MemberExpr {
+                                        span: e.span(),
+                                        obj: Box::new(e),
+                                        prop: swc_ecma_ast::MemberProp::Ident(IdentName {
+                                            span: s,
+                                            sym: a,
+                                        }),
+                                    })
+                                });
                                 let e2 = take(e);
                                 *e = Expr::Call(CallExpr {
                                     span: e2.span(),

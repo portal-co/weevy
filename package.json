@@ -2,7 +2,8 @@
     "name": "weevy",
     "workspaces": [
         "weevy-rt",
-        "weevy-crx-rt"
+        "weevy-crx-rt",
+        "weevy-src-packager"
     ],
     "devDependencies": {
         "typescript": "^5.8.3"

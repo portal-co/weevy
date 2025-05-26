@@ -7,9 +7,10 @@ use swc_common::{
     errors::{ColorConfig, Handler},
     sync::Lrc,
 };
-use swc_ecma_ast::{EsVersion, Ident};
+use swc_ecma_ast::{EsVersion, Expr, Ident, IdentName, MemberExpr};
 use swc_ecma_parser::{Parser, StringInput, Syntax, lexer::Lexer};
 use swc_ecma_visit::VisitMutWith;
+use weevy_swc_core::{default_source_mapper, wevy};
 
 pub async fn server(a: Request) -> anyhow::Result<Body> {
     let q2 = a.uri().query().context("in getting the query")?;
@@ -66,6 +67,7 @@ pub async fn server(a: Request) -> anyhow::Result<Body> {
             SyntaxContext::empty(),
         ),
         root: SyntaxContext::empty(),
+        source_mapper: default_source_mapper(&prog, SyntaxContext::empty()),
     });
     prog.visit_mut_with(&mut weevy_swc_core::Wimple {
         root: SyntaxContext::empty(),
