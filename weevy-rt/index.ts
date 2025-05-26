@@ -3,8 +3,7 @@ let _Proxy = globalThis.Proxy;
 let _Reflect = globalThis.Reflect;
 let push = Array.prototype.push.call.bind(Array.prototype.push);
 let pop = Array.prototype.pop.call.bind(Array.prototype.pop);
-import brotliPromise from 'brotli-wasm'
-const brotli = await brotliPromise;
+
 import { decode } from '@mikeshardmind/base2048'
 import { Host as _Host, newSourceDecompressor } from '@portal-solutions/weevy-src-packager';
 export function urlRewriter(base: string): (a: string) => string {
