@@ -1,4 +1,4 @@
-import { Host as _Host } from '../weevy-src-packager';
+import { Host as _Host } from '@portal-solutions/weevy-src-packager';
 export declare function urlRewriter(base: string): (a: string) => string;
 export declare let Host: typeof _Host;
 export declare class Guest {
