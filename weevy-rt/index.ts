@@ -1,6 +1,5 @@
-import { hook } from '@portal-solutions/hooker-core'
-let _Proxy = globalThis.Proxy;
-let _Reflect = globalThis.Reflect;
+import { hook, _Proxy, _Reflect } from '@portal-solutions/hooker-core'
+
 let push = Array.prototype.push.call.bind(Array.prototype.push);
 let pop = Array.prototype.pop.call.bind(Array.prototype.pop);
 
@@ -131,10 +130,10 @@ interface GuestMap {
 }
 export const WeevyMain = {
     // [symMarkPrivate]: { replaceWith: undefined },
-    newSourceDecompressor(x){
+    newSourceDecompressor(x) {
         let a = newSourceDecompressor(x);
-        return (r,v) => {
-            return a(r,this.wrap(v));
+        return (r, v) => {
+            return a(r, this.wrap(v));
         }
     },
     guests: {} as GuestMap,

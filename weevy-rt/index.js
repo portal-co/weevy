@@ -1,6 +1,4 @@
-import { hook } from '@portal-solutions/hooker-core';
-let _Proxy = globalThis.Proxy;
-let _Reflect = globalThis.Reflect;
+import { hook, _Proxy, _Reflect } from '@portal-solutions/hooker-core';
 let push = Array.prototype.push.call.bind(Array.prototype.push);
 let pop = Array.prototype.pop.call.bind(Array.prototype.pop);
 import { Host as _Host, newSourceDecompressor } from '@portal-solutions/weevy-src-packager';
