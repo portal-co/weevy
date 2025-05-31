@@ -13,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@mikeshardmind/base2048": "^1.0.2",
-    "@portal-solutions/hooker-core": "^1.0.1",
+    "@portal-solutions/hooker-core": "^1.0.2",
     "@portal-solutions/weevy-src-packager": "^1.0.1",
     "brotli-wasm": "^3.0.1"
   }

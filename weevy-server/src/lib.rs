@@ -102,11 +102,22 @@ pub async fn server(
                 .parse_program()
                 .map_err(|e| e.into_diagnostic(&handler))
                 .map_err(|e| anyhow::anyhow!("core: {e:?}"))?;
-
-            prog.visit_mut_with(&mut weevy_swc_core::SourceMapper {
-                sm: cm.clone(),
-                data: Default::default(),
-                id: Ident::new(
+            // sm: cm.clone(),
+            //                 data: Default::default(),
+            //                 id: Ident::new(
+            //                     Atom::new(format!(
+            //                         "__Weevy_{}_Inject",
+            //                         base64::engine::general_purpose::STANDARD
+            //                             .encode(sha3::Sha3_256::digest(q2))
+            //                     )),
+            //                     prog.span(),
+            //                     SyntaxContext::empty(),
+            //                 ),
+            //                 root: SyntaxContext::empty(),
+            //                 source_mapper: default_source_mapper(&prog, SyntaxContext::empty()),
+            prog.visit_mut_with(&mut weevy_swc_core::SourceMapper::new(
+                SyntaxContext::empty(),
+                Ident::new(
                     Atom::new(format!(
                         "__Weevy_{}_Inject",
                         base64::engine::general_purpose::STANDARD
@@ -115,9 +126,9 @@ pub async fn server(
                     prog.span(),
                     SyntaxContext::empty(),
                 ),
-                root: SyntaxContext::empty(),
-                source_mapper: default_source_mapper(&prog, SyntaxContext::empty()),
-            });
+                cm.clone(),
+                default_source_mapper(&prog, SyntaxContext::empty()),
+            ));
             prog.visit_mut_with(&mut weevy_swc_core::Wimple {
                 root: SyntaxContext::empty(),
                 guest_id: Atom::new(gid),

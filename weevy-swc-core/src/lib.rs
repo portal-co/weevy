@@ -64,12 +64,29 @@ pub fn distanced_source_mapper(m: &(dyn Spanned + '_), name: Atom, root: SyntaxC
         }),
     })
 }
+#[non_exhaustive]
 pub struct SourceMapper {
     pub source_mapper: Expr,
     pub sm: Lrc<swc_common::SourceMap>,
     pub data: Vec<u8>,
     pub id: Ident,
     pub root: SyntaxContext,
+}
+impl SourceMapper {
+    pub fn new(
+        root: SyntaxContext,
+        id: Ident,
+        sm: Lrc<swc_common::SourceMap>,
+        source_mapper: Expr,
+    ) -> Self {
+        Self {
+            source_mapper,
+            id,
+            root,
+            sm,
+            data: Default::default(),
+        }
+    }
 }
 impl VisitMut for SourceMapper {
     fn visit_mut_module(&mut self, m: &mut Module) {
