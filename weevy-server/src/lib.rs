@@ -14,18 +14,29 @@ use swc_ecma_visit::VisitMutWith;
 use weevy_swc_core::{default_source_mapper, wevy};
 pub trait Plugin {
     type State;
-    fn state(&self, a: &Request) -> anyhow::Result<Self::State>;
+    async fn state(&self, a: &Request, client: &reqwest::Client) -> anyhow::Result<Self::State>;
     type RewriteState;
-    fn rewrite_state(
+    async fn rewrite_state(
         &self,
         s: Self::State,
         body: &[u8],
         ty: &str,
     ) -> anyhow::Result<Self::RewriteState>;
-    fn rewrite_js(&self, state: &mut Self::RewriteState, prog: &mut Program) -> anyhow::Result<()>;
+    async fn rewrite_js(
+        &self,
+        state: &mut Self::RewriteState,
+        prog: &mut Program,
+    ) -> anyhow::Result<()>;
 }
-pub async fn server(a: Request, plugin: &impl Plugin) -> anyhow::Result<Body> {
-    let mut state = plugin.state(&a).context("in preparing the plugin")?;
+pub async fn server(
+    a: Request,
+    plugin: &impl Plugin,
+    client: &reqwest::Client,
+) -> anyhow::Result<Body> {
+    let mut state = plugin
+        .state(&a, client)
+        .await
+        .context("in preparing the plugin")?;
     let q2 = a.uri().query().context("in getting the query")?;
     let q = q2.split("&");
     let gid = q
@@ -47,7 +58,7 @@ pub async fn server(a: Request, plugin: &impl Plugin) -> anyhow::Result<Body> {
                 .context("in getting the external url or code")?;
             let exter = base64::engine::general_purpose::STANDARD.decode(exter)?;
             let exter = String::from_utf8(exter)?;
-            let q = reqwest::get(exter).await?;
+            let q = client.execute(client.get(exter).build()?).await?;
             let Some(ct) = q
                 .headers()
                 .get("Content-Type")
@@ -61,6 +72,7 @@ pub async fn server(a: Request, plugin: &impl Plugin) -> anyhow::Result<Body> {
     };
     let mut state = plugin
         .rewrite_state(state, &v, ct.as_str())
+        .await
         .context("in preparing the plugin for rewriting")?;
     let mut cm = Lrc::new(SourceMap::new(FilePathMapping::default()));
     match ct.as_str() {
@@ -112,6 +124,7 @@ pub async fn server(a: Request, plugin: &impl Plugin) -> anyhow::Result<Body> {
             });
             plugin
                 .rewrite_js(&mut state, &mut prog)
+                .await
                 .context("in rewriting using the plugin")?;
 
             Ok(Body::new(swc_ecma_codegen::to_code(&prog)))
