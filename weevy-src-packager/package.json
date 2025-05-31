@@ -1,6 +1,6 @@
 {
   "name": "@portal-solutions/weevy-src-packager",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "types": "index.d.ts",
@@ -13,7 +13,7 @@
   "type": "module",
   "dependencies": {
     "@mikeshardmind/base2048": "^1.0.2",
-    "@portal-solutions/hooker-core": "^1.0.0",
+    "@portal-solutions/hooker-core": "^1.0.1",
     "brotli-compress": "^1.3.3",
     "brotli-wasm": "^3.0.1"
   }

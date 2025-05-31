@@ -18,3 +18,4 @@ swc_ecma_visit.workspace = true
 swc_ecma_codegen.workspace = true
 tokio = "1.45.0"
 weevy-swc-core = { version = "0.2.0", path = "../weevy-swc-core" }
+sha3 = "0.10.8"
