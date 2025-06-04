@@ -1,6 +1,7 @@
 import { hook } from '@portal-solutions/hooker-core'
 import { decompress } from 'brotli-compress/js.mjs'
 import { decode } from '@mikeshardmind/base2048'
+export let _Uint8Array: typeof Uint8Array = Uint8Array;
 export class Host {
     static mappers: WeakMap<any, Host> = new WeakMap();
     #obj: any;
@@ -17,6 +18,7 @@ export class Host {
         }
     }
 }
+let theDecoder = new TextDecoder();
 export function newSourceDecompressor(x) {
     const a = decompress(decode(x));
     let ress = {};
@@ -24,10 +26,10 @@ export function newSourceDecompressor(x) {
         // v = this.wrap(v);
         const s = r.split(";");
         const [c, b] = [parseInt(s[0]), parseInt(s[1])];
-        const x = new Uint8Array(a.buffer, c + a.byteOffset, b - c);
+        const x = new _Uint8Array(a.buffer, c + a.byteOffset, b - c);
         // let res;
         // return v => {
-        Host.of(v).stringify = () => (ress[r] || (ress[r] = { $: new TextDecoder().decode(x) })).$;
+        Host.of(v).stringify = () => (ress[r] || (ress[r] = { $: theDecoder.decode(x) })).$;
         return v;
         // }
     }

@@ -1,16 +1,16 @@
 {
-  "name": "@portal-solutions/weevy-rt",
-  "version": "1.0.2",
+  "name": "@portal-solutions/weevy-single-tenant",
+  "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "types": "index.d.ts",
-  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "type": "module",
+  "types": "index.d.ts",
   "dependencies": {
     "@mikeshardmind/base2048": "^1.0.2",
     "@portal-solutions/hooker-core": "^1.0.2",

@@ -3,7 +3,10 @@
     "workspaces": [
         "weevy-rt",
         "weevy-crx-rt",
-        "weevy-src-packager"
+        "weevy-src-packager",
+        "weevy-single-tenant",
+        "weevy-common",
+        "weevy-camo-wasm/pkg"
     ],
     "devDependencies": {
         "typescript": "^5.8.3"

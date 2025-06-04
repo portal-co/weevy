@@ -1,5 +1,7 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::mem::take;
+use std::ops::Deref;
 
 use swc_atoms::Atom;
 use swc_common::Span;
@@ -36,6 +38,7 @@ use swc_ecma_ast::VarDeclarator;
 use swc_ecma_ast::{Ident, ImportDecl, Module};
 use swc_ecma_visit::VisitMut;
 use swc_ecma_visit::VisitMutWith;
+use weevy_camo::Config;
 
 pub fn wevy(span: Span, ctx: SyntaxContext) -> Expr {
     Expr::Ident(Ident::new(Atom::new("__WeevyMain"), span, ctx))
@@ -44,6 +47,31 @@ pub fn default_source_mapper(m: &(dyn Spanned + '_), root: SyntaxContext) -> Exp
     Expr::Member(MemberExpr {
         span: m.span(),
         obj: Box::new(wevy(m.span(), root)),
+        prop: swc_ecma_ast::MemberProp::Ident(IdentName {
+            span: m.span(),
+            sym: Atom::new("newSrcDecompressor"),
+        }),
+    })
+}
+pub fn single_tenant_source_mapper(
+    m: &(dyn Spanned + '_),
+    name: Atom,
+    root: SyntaxContext,
+) -> Expr {
+    Expr::Member(MemberExpr {
+        span: m.span(),
+        obj: Box::new(Expr::Member(MemberExpr {
+            span: m.span(),
+            obj: Box::new(Expr::Ident(Ident::new(
+                Atom::new("globalThis"),
+                m.span(),
+                root,
+            ))),
+            prop: MemberProp::Computed(ComputedPropName {
+                span: m.span(),
+                expr: Box::new(Expr::Ident(Ident::new(name, m.span(), root))),
+            }),
+        })),
         prop: swc_ecma_ast::MemberProp::Ident(IdentName {
             span: m.span(),
             sym: Atom::new("newSrcDecompressor"),
@@ -388,5 +416,41 @@ impl VisitMut for Wimple {
             }],
             type_args: None,
         });
+    }
+}
+#[derive(Clone, Default, Hash, Debug)]
+pub struct ApplyCamo<T> {
+    pub cfg: Config<T>,
+    pub applier: Expr,
+}
+impl<T: Deref<Target = str>> VisitMut for ApplyCamo<T> {
+    fn visit_mut_ident(&mut self, node: &mut Ident) {
+        node.visit_mut_children_with(self);
+        if let Cow::Owned(a) = self.cfg.rewrite(&node.sym) {
+            node.sym = Atom::new(a);
+        }
+    }
+    fn visit_mut_ident_name(&mut self, node: &mut IdentName) {
+        node.visit_mut_children_with(self);
+        if let Cow::Owned(a) = self.cfg.rewrite(&node.sym) {
+            node.sym = Atom::new(a);
+        }
+    }
+    fn visit_mut_member_expr(&mut self, node: &mut MemberExpr) {
+        node.visit_mut_children_with(self);
+        if let MemberProp::Computed(c) = &mut node.prop {
+            c.expr = Box::new(match take(&mut *c.expr) {
+                e => Expr::Call(CallExpr {
+                    span: c.span,
+                    ctxt: SyntaxContext::default(),
+                    callee: Callee::Expr(Box::new(self.applier.clone())),
+                    args: vec![ExprOrSpread {
+                        expr: Box::new(e),
+                        spread: None,
+                    }],
+                    type_args: None,
+                }),
+            })
+        }
     }
 }

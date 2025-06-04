@@ -1,5 +1,5 @@
 [workspace]
-members=[ "weevy-server","weevy-swc-core"]
+members=[ "weevy-camo", "weevy-camo-wasm", "weevy-server","weevy-swc-core"]
 resolver="3"
 
 [workspace.dependencies]

@@ -2305,6 +2305,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "weevy-camo"
+version = "0.1.0"
+
+[[package]]
+name = "weevy-camo-wasm"
+version = "0.1.0"
+dependencies = [
+ "wasm-bindgen",
+ "weevy-camo",
+]
+
+[[package]]
 name = "weevy-server"
 version = "0.2.0"
 dependencies = [
@@ -2335,6 +2347,7 @@ dependencies = [
  "swc_ecma_parser",
  "swc_ecma_utils",
  "swc_ecma_visit",
+ "weevy-camo",
 ]
 
 [[package]]

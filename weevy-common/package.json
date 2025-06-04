@@ -1,21 +1,18 @@
 {
-  "name": "@portal-solutions/weevy-rt",
-  "version": "1.0.2",
+  "name": "@portal-solutions/weevy-common",
+  "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "license": "ISC",
+  "author": "",
   "type": "module",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "devDependencies": {},
   "dependencies": {
     "@mikeshardmind/base2048": "^1.0.2",
     "@portal-solutions/hooker-core": "^1.0.2",
-    "@portal-solutions/weevy-camo-wasm": "^0.1.0",
-    "@portal-solutions/weevy-common": "^1.0.0",
     "@portal-solutions/weevy-src-packager": "^1.0.1",
     "brotli-wasm": "^3.0.1"
   }

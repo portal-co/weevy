@@ -5,15 +5,17 @@ let pop = Array.prototype.pop.call.bind(Array.prototype.pop);
 
 import { decode } from '@mikeshardmind/base2048'
 import { Host as _Host, newSourceDecompressor } from '@portal-solutions/weevy-src-packager';
+import { symWeevyMain } from '@portal-solutions/weevy-common';
+let _XMLHttpRequest: typeof XMLHttpRequest = XMLHttpRequest;
 export function urlRewriter(base: string): (a: string) => string {
     return data => {
-        let a = new XMLHttpRequest();
-        a.open('GET', `${base}code=${btoa(data)}`, false);
+        let a = new _XMLHttpRequest();
+        a.open('GET', `${base}code=${btoa(data)}&ct=text/javascript`, false);
         a.send();
         return a.responseText;
     }
 }
-const globalName = '__WeevyMain';
+
 // const symMarkPrivate = Symbol.for("weevy private");
 // const symSpecialStringify = Symbol.for("weevy string marker");
 // const marSpecialStringify: WeakMap<any, () => string> = new WeakMap();
@@ -77,49 +79,34 @@ export class Guest {
     }
     constructor(id: string, rewriter: (a: string) => string) {
         this.#rewriter = rewriter;
-        let rewrite_prop = (p: string | symbol): string | symbol => {
-            if (typeof p === 'string') {
-                if (p.startsWith(globalName)) {
-                    return p + '_';
-                }
-            }
-            return p;
-        };
         // let set = (a, p) => ;
         this.#set(globalThis, {
             has(target, p) {
-                p = rewrite_prop(p);
+                // p = rewrite_prop(p);
                 return Reflect.has(target, p)
             },
             get(target, p, receiver) {
-                p = rewrite_prop(p);
+                // p = rewrite_prop(p);
                 return Reflect.get(target, p, receiver);
             },
             deleteProperty(target, p) {
-                p = rewrite_prop(p);
+                // p = rewrite_prop(p);
                 return Reflect.deleteProperty(target, p)
             },
             defineProperty(target, property, attributes) {
-                property = rewrite_prop(property);
+                // property = rewrite_prop(property);
                 return Reflect.defineProperty(target, property, attributes);
             },
             getOwnPropertyDescriptor(target, p) {
-                p = rewrite_prop(p);
+                // p = rewrite_prop(p);
                 return Reflect.getOwnPropertyDescriptor(target, p);
             },
             set(target, p, newValue, receiver) {
-                p = rewrite_prop(p);
+                // p = rewrite_prop(p);
                 return Reflect.set(target, p, newValue, receiver)
             },
             ownKeys(target) {
-                return Reflect.ownKeys(target).filter(x => x !== globalName).map(p => {
-                    if (typeof p === 'string') {
-                        if (p.startsWith(globalName) && p.endsWith("_")) {
-                            return p.slice(0, -1);
-                        }
-                    }
-                    return p;
-                });
+                return Reflect.ownKeys(target);
             },
 
         }, true);
@@ -140,7 +127,7 @@ export const WeevyMain = {
     withProxy<T extends object>(a: T): T {
         return new Proxy(a, {
             has(target, a) {
-                return a !== globalName && Reflect.has(target, a);
+                return Reflect.has(target, a);
             }
         });
     },
@@ -183,7 +170,7 @@ export const WeevyMain = {
         return this.guests[c];
     }
 };
-Object.defineProperty(globalThis, globalName, {
+Object.defineProperty(globalThis, symWeevyMain, {
     value: WeevyMain,
     configurable: false,
     enumerable: false,
