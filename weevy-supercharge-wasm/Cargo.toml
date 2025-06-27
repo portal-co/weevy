@@ -1,0 +1,21 @@
+[package]
+name = "weevy-supercharge-wasm"
+version = "0.1.0"
+edition = "2024"
+description = "WASM for the Weevy Supercharger"
+license = "MPL-2.0"
+
+[dependencies]
+wasm-bindgen = "0.2.100"
+swc_atoms.workspace = true
+swc_common.workspace = true
+swc_ecma_ast.workspace = true
+swc_ecma_parser.workspace = true
+swc_ecma_utils.workspace = true
+swc_ecma_visit.workspace = true
+weevy-camo = { version = "0.1.0", path = "../weevy-camo" }
+weevy-swc-core = { version = "0.2.0", path = "../weevy-swc-core" }
+swc_ecma_codegen.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]

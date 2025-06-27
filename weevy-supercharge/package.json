@@ -1,0 +1,26 @@
+{
+  "name": "@portal-solutions/weevy-supercharge",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "types": "index.d.ts",
+  "dependencies": {
+    "@mikeshardmind/base2048": "^1.0.2",
+    "@portal-solutions/hooker-core": "^1.0.2",
+    "@portal-solutions/weevy-camo-wasm": "^0.1.0",
+    "@portal-solutions/weevy-common": "^1.0.0",
+    "@portal-solutions/weevy-single-tenant": "^1.0.0",
+    "@portal-solutions/weevy-src-packager": "^1.0.1",
+    "@stablelib/base64": "^2.0.1",
+    "@stablelib/chacha20poly1305": "^2.0.1",
+    "@stablelib/sha3": "^2.0.1",
+    "brotli-wasm": "^3.0.1"
+  }
+}

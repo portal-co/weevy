@@ -13,6 +13,7 @@ impl PropRewriter {
         Self {
             cfg: Config {
                 isolate: a.to_owned(),
+                flags: Default::default(),
             },
         }
     }

@@ -6,9 +6,12 @@
         "weevy-src-packager",
         "weevy-single-tenant",
         "weevy-common",
-        "weevy-camo-wasm/pkg"
+        "weevy-camo-wasm/pkg",
+        "weevy-supercharge",
+        "weevy-supercharge-wasm/pkg"
     ],
     "devDependencies": {
+        "parcel": "^2.15.4",
         "typescript": "^5.8.3"
     }
 }

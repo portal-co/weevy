@@ -6,6 +6,7 @@ let pop = Array.prototype.pop.call.bind(Array.prototype.pop);
 import { decode } from '@mikeshardmind/base2048'
 import { Host as _Host, newSourceDecompressor } from '@portal-solutions/weevy-src-packager';
 import { symWeevyMain } from '@portal-solutions/weevy-common';
+import { PropRewriter } from '../weevy-camo-wasm/pkg/weevy_camo_wasm_bg';
 let _XMLHttpRequest: typeof XMLHttpRequest = XMLHttpRequest;
 export function urlRewriter(base: string): (a: string) => string {
     return data => {
@@ -24,6 +25,10 @@ export class Guest {
     // #globalThis: typeof globalThis;
     #of_: WeakMap<any, any> = new WeakMap();
     #expose_: WeakMap<any, any> = new WeakMap();
+    #camo: PropRewriter;
+    camoRewrite(a: any): any {
+        return this.#camo.rewrite(a)
+    }
     #rewriter: (a: string) => string;
     rewrite(a: string): string {
         return this.#rewriter(a)
@@ -43,12 +48,7 @@ export class Guest {
         if (typeof t !== "object" && typeof t !== "function") {
             return t;
         }
-        return new Proxy(t as any, {
-            apply(target, thisArg, argArray) {
-                thisArg = this_;
-                return Reflect.apply(target, thisArg, argArray);
-            },
-        }) as T[typeof key];
+        return ((...argArray) => Reflect.apply(t as any, this_, argArray)) as T[typeof key];
     }
     #set<T extends object>(a: T, p: ProxyHandler<T>, create: boolean): T {
         let crate = (a) => new Proxy(Object.create(a), {
@@ -78,6 +78,7 @@ export class Guest {
         return this.of(globalThis);
     }
     constructor(id: string, rewriter: (a: string) => string) {
+        this.#camo = new PropRewriter(id);
         this.#rewriter = rewriter;
         // let set = (a, p) => ;
         this.#set(globalThis, {

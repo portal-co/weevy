@@ -1,17 +1,25 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::mem::replace;
 use std::mem::take;
 use std::ops::Deref;
 
 use swc_atoms::Atom;
+use swc_common::Mark;
 use swc_common::Span;
 use swc_common::Spanned;
 use swc_common::SyntaxContext;
 use swc_common::sync::Lrc;
+use swc_ecma_ast::AssignExpr;
+use swc_ecma_ast::AssignOp;
+use swc_ecma_ast::BinExpr;
+use swc_ecma_ast::BinaryOp;
+use swc_ecma_ast::BindingIdent;
 use swc_ecma_ast::BlockStmt;
 use swc_ecma_ast::CallExpr;
 use swc_ecma_ast::Callee;
 use swc_ecma_ast::ComputedPropName;
+use swc_ecma_ast::CondExpr;
 use swc_ecma_ast::Decl;
 use swc_ecma_ast::Expr;
 use swc_ecma_ast::ExprOrSpread;
@@ -422,6 +430,7 @@ impl VisitMut for Wimple {
 pub struct ApplyCamo<T> {
     pub cfg: Config<T>,
     pub applier: Expr,
+    pub core: Option<(Atom, SyntaxContext)>,
 }
 impl<T: Deref<Target = str>> VisitMut for ApplyCamo<T> {
     fn visit_mut_ident(&mut self, node: &mut Ident) {
@@ -436,21 +445,143 @@ impl<T: Deref<Target = str>> VisitMut for ApplyCamo<T> {
             node.sym = Atom::new(a);
         }
     }
+    fn visit_mut_stmts(&mut self, node: &mut Vec<Stmt>) {
+        match self.core.is_some() {
+            false => return node.visit_mut_children_with(self),
+            true => {
+                let oc = replace(
+                    &mut self.core.as_mut().unwrap().1,
+                    SyntaxContext::empty().apply_mark(Mark::new()),
+                );
+                node.visit_mut_children_with(self);
+                let nc = replace(&mut self.core.as_mut().unwrap().1, oc);
+                let a = self.core.as_mut().unwrap().0.clone();
+                node.insert(
+                    0,
+                    Stmt::Decl(Decl::Var(Box::new(VarDecl {
+                        span: Span::dummy_with_cmt(),
+                        ctxt: nc,
+                        kind: swc_ecma_ast::VarDeclKind::Let,
+                        declare: false,
+                        decls: vec![VarDeclarator {
+                            span: Span::dummy_with_cmt(),
+                            name: Pat::Ident(BindingIdent {
+                                type_ann: None,
+                                id: Ident::new(a, Span::dummy_with_cmt(), nc),
+                            }),
+                            init: None,
+                            definite: false,
+                        }],
+                    }))),
+                );
+            }
+        }
+    }
     fn visit_mut_member_expr(&mut self, node: &mut MemberExpr) {
+        if let Some(c) = self.core.as_ref() {
+            if let MemberProp::Ident(i) = &node.prop {
+                node.prop = MemberProp::Computed(ComputedPropName {
+                    span: i.span,
+                    expr: Box::new(Expr::Lit(Lit::Str(Str {
+                        span: i.span,
+                        value: i.sym.clone(),
+                        raw: None,
+                    }))),
+                })
+            }
+        }
         node.visit_mut_children_with(self);
         if let MemberProp::Computed(c) = &mut node.prop {
             c.expr = Box::new(match take(&mut *c.expr) {
-                e => Expr::Call(CallExpr {
-                    span: c.span,
-                    ctxt: SyntaxContext::default(),
-                    callee: Callee::Expr(Box::new(self.applier.clone())),
-                    args: vec![ExprOrSpread {
-                        expr: Box::new(e),
-                        spread: None,
-                    }],
-                    type_args: None,
-                }),
+                e => match self.core.clone() {
+                    None => Expr::Call(CallExpr {
+                        span: c.span,
+                        ctxt: SyntaxContext::default(),
+                        callee: Callee::Expr(Box::new(self.applier.clone())),
+                        args: vec![ExprOrSpread {
+                            expr: Box::new(e),
+                            spread: None,
+                        }],
+                        type_args: None,
+                    }),
+                    Some(core) => {
+                        if is_global_this(&node.obj) {
+                            match &e {
+                                Expr::Lit(Lit::Str(s)) => Expr::Lit(Lit::Str(Str {
+                                    span: s.span,
+                                    value: Atom::new(self.cfg.rewrite(&s.value)),
+                                    raw: None,
+                                })),
+                                _ => Expr::Call(CallExpr {
+                                    span: c.span,
+                                    ctxt: SyntaxContext::default(),
+                                    callee: Callee::Expr(Box::new(self.applier.clone())),
+                                    args: vec![ExprOrSpread {
+                                        expr: Box::new(e),
+                                        spread: None,
+                                    }],
+                                    type_args: None,
+                                }),
+                            }
+                        } else {
+                            *node.obj = match take(&mut *node.obj) {
+                                obj => Expr::Assign(AssignExpr {
+                                    span: obj.span(),
+                                    op: AssignOp::Assign,
+                                    left: swc_ecma_ast::AssignTarget::Simple(
+                                        swc_ecma_ast::SimpleAssignTarget::Ident(BindingIdent {
+                                            id: Ident::new(core.0.clone(), obj.span(), core.1),
+                                            type_ann: None,
+                                        }),
+                                    ),
+                                    right: Box::new(obj),
+                                }),
+                            };
+                            Expr::Cond(CondExpr {
+                                span: e.span(),
+                                test: Box::new(Expr::Bin(BinExpr {
+                                    span: e.span(),
+                                    op: BinaryOp::EqEqEq,
+                                    left: Box::new(Expr::Ident(Ident::new(
+                                        core.0,
+                                        e.span(),
+                                        core.1,
+                                    ))),
+                                    right: Box::new(Expr::Ident(Ident::new_no_ctxt(
+                                        Atom::new("globalThis"),
+                                        e.span(),
+                                    ))),
+                                })),
+                                cons: match &e {
+                                    Expr::Lit(Lit::Str(s)) => Box::new(Expr::Lit(Lit::Str(Str {
+                                        span: s.span,
+                                        value: Atom::new(self.cfg.rewrite(&s.value)),
+                                        raw: None,
+                                    }))),
+                                    _ => Box::new(Expr::Call(CallExpr {
+                                        span: c.span,
+                                        ctxt: SyntaxContext::default(),
+                                        callee: Callee::Expr(Box::new(self.applier.clone())),
+                                        args: vec![ExprOrSpread {
+                                            expr: Box::new(e.clone()),
+                                            spread: None,
+                                        }],
+                                        type_args: None,
+                                    })),
+                                },
+                                alt: Box::new(e),
+                            })
+                        }
+                    }
+                },
             })
         }
+    }
+}
+pub fn is_global_this(n: &Expr) -> bool {
+    match n {
+        Expr::Ident(i) => i.sym == "globalThis" && i.ctxt == Default::default(),
+        Expr::Assign(a) => is_global_this(&a.right),
+        _ => false,
     }
 }
