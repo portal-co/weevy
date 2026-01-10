@@ -1,13 +1,14 @@
 # weevy
 
 ## Description
-Project weevy
+A workspace (`weevy`) containing `weevy-server`, `weevy-camo`, and `weevy-swc-core`. Likely a server/proxy solution with obfuscation ("camo") capabilities.
 
 ## Goals
-- [ ] Add project goals
+- [ ] Provide server/proxy services
+- [ ] Implement obfuscation/camo
 
 ## Progress
-- [ ] Initial setup
+- [ ] Workspace setup with SWC integration
 
 ---
 *AI assisted*
